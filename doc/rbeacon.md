@@ -153,8 +153,6 @@ Incoming messages are:
 
 
 - `{rbeacon, Beacon, Message, SenderIp}` : when a subscription is received
-- `{rbeacon, Beacon, closed}` : when the beacon is closed
-- `{`EXIT', rbeacon, Beacon, Reason}' : when the beacon exit unexpectedly
 
 
 Note: the filter allows you to filter a subscription by its prefix.
