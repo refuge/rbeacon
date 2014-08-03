@@ -87,7 +87,7 @@ publish(Ref, Msg) ->
 %%
 %% - `{rbeacon, Beacon, Message, SenderIp}' : when a subscription is received
 %% - `{rbeacon, Beacon, closed}' : when a beacon is closed
-%% - `{'EXIT', rbeacon, Beacon, Reason}': when a beacon exit anormaly
+%% - <code>{'EXIT', rbeacon, Beacon, Reason}</code>: when a beacon exit anormaly
 
 %%
 %% Note: the filter allows you to filter a subscription by its prefix.

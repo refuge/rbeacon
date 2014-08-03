@@ -153,7 +153,7 @@ Incoming messages are:
 
 - `{rbeacon, Beacon, Message, SenderIp}` : when a subscription is received
 - `{rbeacon, Beacon, closed}` : when a beacon is closed
-- `{`EXIT', rbeacon, Beacon, Reason}': when a beacon exit anormaly
+- `{'EXIT', rbeacon, Beacon, Reason}`: when a beacon exit anormaly
 <a name="unsubscribe-1"></a>
 
 ### unsubscribe/1 ###
