@@ -117,7 +117,7 @@ handle_call({subscribe, Filter}, _From, State) ->
     {reply, ok, State#state{filter=Filter}};
 
 handle_call(unsubscribe, _From, State) ->
-    {reply, ok,  State#state{filter=nil}}.
+    {reply, ok, State#state{filter=nil}}.
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -146,10 +146,11 @@ handle_info({udp, _Sock, IP, _, Msg}, #state{owner=Owner,
 handle_info(_Msg, State) ->
     {noreply, State}.
 
-%% premature delete -> cleanup
+%% close
 terminate(normal, #state{owner=Owner}) ->
     Owner ! {rbeacon, self(), closed},
     ok;
+%% exit
 terminate(Reason, #state{owner=Owner}=State) ->
     Owner ! {'EXIT', rbeacon, self(), Reason},
     error_logger:info_msg("got terminate(~p, ~p)~n", [Reason, State]),
