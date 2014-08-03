@@ -1,0 +1,11 @@
+{application, rbeacon,
+ [
+  {description, "LAN discovery and presence"},
+  {vsn, "0.1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {env, []}
+ ]}.
