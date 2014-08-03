@@ -86,6 +86,9 @@ publish(Ref, Msg) ->
 %% Incoming messages are:
 %%
 %% - `{rbeacon, Beacon, Message, SenderIp}' : when a subscription is received
+%% - `{rbeacon, Beacon, closed}' : when a beacon is closed
+%% - `{'EXIT', rbeacon, Beacon, Reason}': when a beacon exit anormaly
+
 %%
 %% Note: the filter allows you to filter a subscription by its prefix.
 -spec subscribe(beacon(), binary() | string()) -> ok.
@@ -190,11 +193,13 @@ handle_info(_Msg, State) ->
 
 %% close
 %% @private
-terminate(normal, _State) ->
+terminate(normal, #state{owner=Owner}) ->
+    Owner ! {rbeacon, self(), closed},
     ok;
 %% exit
-terminate(_Reason, _State) ->
-    error_logger:info_msg("got terminate(~p, ~p)~n", [_Reason, _State]),
+terminate(Reason, #state{owner=Owner}=State) ->
+    Owner ! {'EXIT', rbeacon, self(), Reason},
+    error_logger:info_msg("got terminate(~p, ~p)~n", [Reason, State]),
     ok.
 
 %% @private
@@ -310,7 +315,14 @@ rbeacon_test() ->
     end,
 
     ok = rbeacon:close(Service),
+    receive
+        {rbeacon, Service, closed} -> ok
+    end,
+
     ok = rbeacon:close(Client),
+    receive
+        {rbeacon, Client, closed} -> ok
+    end,
 
     {ok, Node1} = rbeacon:new(5670),
     {ok, Node2} = rbeacon:new(5670),

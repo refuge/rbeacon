@@ -151,11 +151,9 @@ All messages received by the peer will be then sent to the process owner.
 Incoming messages are:
 
 
-
 - `{rbeacon, Beacon, Message, SenderIp}` : when a subscription is received
-
-
-Note: the filter allows you to filter a subscription by its prefix.
+- `{rbeacon, Beacon, closed}` : when a beacon is closed
+- `{`EXIT', rbeacon, Beacon, Reason}': when a beacon exit anormaly
 <a name="unsubscribe-1"></a>
 
 ### unsubscribe/1 ###
