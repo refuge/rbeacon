@@ -130,14 +130,14 @@ handle_info({transmit, Msg}, State) ->
 handle_info({udp, Sock, _IP, _, Msg}, #state{sock=Sock, transmit=Msg}=State) ->
     %% echo, ignore it
     {noreply, State};
-handle_info({udp, _Socket, _IP, _, _Msg}, #state{filter=nil}=State) ->
+handle_info({udp, _Sock, _IP, _, _Msg}, #state{filter=nil}=State) ->
     %% no subscribtion
     {noreply, State};
-handle_info({udp, _Socket, _IP, _, Msg}, #state{owner=Owner,
-                                                filter=Filter}=State) ->
+handle_info({udp, _Sock, IP, _, Msg}, #state{owner=Owner,
+                                             filter=Filter}=State) ->
     case filter_match(Msg, Filter) of
         true ->
-            Owner ! {rbeacon, self(), Msg};
+            Owner ! {rbeacon, self(), Msg, IP};
         false ->
             ok
     end,
