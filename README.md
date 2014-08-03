@@ -15,8 +15,10 @@ broadcasts. You can define the format of your outgoing beacons, and set a filter
 that validates incoming beacons. Beacons are sent and received asynchronously in
 the background.
 
-Note: the current implementation is heavily inspired on
+> Note: the current implementation is heavily inspired on
 [zbeacon](http://czmq.zeromq.org/manual:zbeacon) from zeromq.
+
+Look at the [`rbeacon`](http://github.com/refuge/rbeacon/blob/master/doc/rbeacon.md) module for the API usage.
 
 ## Example
 
