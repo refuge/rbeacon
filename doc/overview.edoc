@@ -1,10 +1,15 @@
+%% -*- erlang -*-
+%%
+%% This file is part of couchbeam released under the MIT license.
+%% See the NOTICE for more information.
 
 
-# rbeacon -  LAN discovery and presence. #
 
-Copyright (c) 2014 Benoît Chesneau.
+@copyright 2014 Benoît Chesneau.
+@version 0.1
+@title rbeacon -  LAN discovery and presence.
 
-__Version:__ 0.1
+@doc
 
 # Description
 
@@ -14,13 +19,6 @@ messages on the local area network. This implementation uses IPv4 UDP
 broadcasts. You can define the format of your outgoing beacons, and set a filter
 that validates incoming beacons. Beacons are sent and received asynchronously in
 the background.
+
 Note: the current implementation is heavily inspired on
 [zbeacon](http://czmq.zeromq.org/manual:zbeacon) from zeromq.
-
-
-## Modules ##
-
-
-<table width="100%" border="0" summary="list of modules">
-<tr><td><a href="http://github.com/refuge/rbeacon/blob/master/doc/rbeacon.md" class="module">rbeacon</a></td></tr></table>
-

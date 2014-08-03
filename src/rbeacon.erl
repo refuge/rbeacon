@@ -1,3 +1,15 @@
+%%% -*- erlang -*-
+%%%
+%%% This file is part of rbeacon released under the MIT license.
+%%% See the NOTICE for more information.
+
+%% @doc The rbeacon module implements a peer-to-peer discovery service for local
+%% networks. A beacon can broadcast and/or capture service announcements using
+%% UDP messages on the local area network. This implementation uses IPv4 UDP
+%% broadcasts. You can define the format of your outgoing beacons, and set a
+%% filter that validates incoming beacons. Beacons are sent and received
+%% asynchronously in the background.
+%%
 -module(rbeacon).
 -behaviour(gen_server).
 
@@ -31,13 +43,19 @@
 -define(SOL_SOCKET, 16#ffff).
 -define(SO_REUSEPORT, 16#0200).
 
+-type beacon() :: pid().
+-export_type([beacon/0]).
+
+
+%% @doc Create a new beacon on a certain UDP port.
+- spec new(Port::integer()) -> {ok, beacon()} | {error, term()}.
 new(Port) ->
     gen_server:start_link(?MODULE, [Port, self()], []).
 
 
-%% @doc
+%% @doc close a beacon
 %% Close a beacon.
-- spec close(Ref::pid()) -> ok.
+- spec close(Ref::beacon()) -> ok.
 close(Ref) ->
     try
         gen_server:call(Ref, close, infinity)
@@ -48,13 +66,21 @@ close(Ref) ->
         exit:{normal, _} -> ok
     end.
 
+%% @doc Assigns a new controlling process Pid to beacon
+%% The controlling process is the process which receives messages from the
+%% beacon. If called by any other process than the current controlling process,
+%% `{error, not_owner}' is returned.
+-spec control(beacon(), pid()) -> ok | {error, not_owner}.
 control(Ref, Pid) ->
     gen_server:call(Ref, {control, Pid, self()}).
 
-
+%% @doc Start broadcasting beacon to peers at the specified interval
+-spec publish(beacon(), binary()) -> ok | {error, term()}.
 publish(Ref, Msg) ->
     gen_server:call(Ref, {publish, Msg}, infinity).
 
+%% @doc Start listening to other peers; zero-sized filter means get everything
+-spec subscribe(beacon(), binary() | string()) -> ok.
 subscribe(Ref, Filter) when is_list(Filter) ->
     subscribe(Ref, list_to_binary(Filter));
 subscribe(Ref, Filter0) when is_binary(Filter0) ->
@@ -64,12 +90,18 @@ subscribe(Ref, Filter0) when is_binary(Filter0) ->
     end,
     gen_server:call(Ref, {subscribe, Filter}).
 
+%% @doc Stop listening to other peers
+-spec unsubscribe(beacon()) -> ok.
 unsubscribe(Ref) ->
     gen_server:call(Ref, unsubscribe).
 
+%% @doc Stop broadcasting beacons
+-spec silence(beacon()) -> ok.
 silence(Ref) ->
     gen_server:call(Ref, silence).
 
+%% @doc Set broadcast interval in milliseconds (default is 1000 msec)
+-spec set_interval(beacon(), integer()) -> ok | {error, term()}.
 set_interval(Ref, Interval) when is_integer(Interval) ->
     gen_server:call(Ref, {set_interval, Interval});
 set_interval(_, _) ->
@@ -77,14 +109,14 @@ set_interval(_, _) ->
 
 
 %% gen server functions
-
+%% @private
 init([Port, Owner]) ->
     {ok, Sock} = open_udp_port(Port),
     {ok, #state{sock=Sock,
                 port=Port,
                 interval=?DEFAULT_INTERVAL,
                 owner=Owner}}.
-
+%% @private
 handle_call(close, _From, State) ->
     ok = cancel_timer(State),
     {stop, normal, ok, State#state{tref=nil}};
@@ -119,9 +151,11 @@ handle_call({subscribe, Filter}, _From, State) ->
 handle_call(unsubscribe, _From, State) ->
     {reply, ok, State#state{filter=nil}}.
 
+%% @private
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
+%% @private
 handle_info({transmit, Msg}, State) ->
     %% broadcast the message now
     ok = transmit_msg(Msg, State),
@@ -147,6 +181,7 @@ handle_info(_Msg, State) ->
     {noreply, State}.
 
 %% close
+%% @private
 terminate(normal, #state{owner=Owner}) ->
     Owner ! {rbeacon, self(), closed},
     ok;
@@ -156,6 +191,7 @@ terminate(Reason, #state{owner=Owner}=State) ->
     error_logger:info_msg("got terminate(~p, ~p)~n", [Reason, State]),
     ok.
 
+%% @private
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 

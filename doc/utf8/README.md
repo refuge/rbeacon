@@ -22,5 +22,5 @@ Note: the current implementation is heavily inspired on
 
 
 <table width="100%" border="0" summary="list of modules">
-<tr><td><a href="http://github.com/refuge/rbeacon/blob/master/doc/rbeacon.md" class="module">rbeacon</a></td></tr></table>
+<tr><td><a href="rbeacon.md" class="module">rbeacon</a></td></tr></table>
 
