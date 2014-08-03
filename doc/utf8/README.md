@@ -18,6 +18,8 @@ the background.
 > Note: the current implementation is heavily inspired on
 [zbeacon](http://czmq.zeromq.org/manual:zbeacon) from zeromq.
 
+## Usage
+
 Look at the [`rbeacon`](rbeacon.md) module for the API usage.
 
 ## Example
