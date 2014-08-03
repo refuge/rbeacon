@@ -147,10 +147,12 @@ handle_info(_Msg, State) ->
     {noreply, State}.
 
 %% premature delete -> cleanup
-terminate(normal, _State) ->
+terminate(normal, #state{owner=Owner}) ->
+    Owner ! {rbeacon, self(), closed},
     ok;
-terminate(_Reason, _State) ->
-    error_logger:info_msg("got terminate(~p, ~p)~n", [_Reason, _State]),
+terminate(Reason, #state{owner=Owner}=State) ->
+    Owner ! {'EXIT', rbeacon, self(), Reason},
+    error_logger:info_msg("got terminate(~p, ~p)~n", [Reason, State]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
