@@ -67,6 +67,7 @@ close(Ref) ->
         exit:{normal, _} -> ok
     end.
 
+
 %% @doc Assigns a new controlling process Pid to beacon
 %% The controlling process is the process which receives messages from the
 %% beacon. If called by any other process than the current controlling process,
@@ -78,15 +79,13 @@ control(Ref, Pid) ->
 %% @doc Start broadcasting beacon to peers at the specified interval
 -spec publish(beacon(), binary()) -> ok | {error, term()}.
 publish(Ref, Msg) ->
-    gen_server:call(Ref, {publish, Msg}, infinity).
+    gen_server:call(Ref, {publish, to_binary(Msg)}, infinity).
 
 %% @doc Start listening to other peers; zero-sized filter means get everything
 %% All messages received by the peer will be then sent to the process owner.
 %% Incoming messages are:
 %%
 %% - `{rbeacon, Beacon, Message, SenderIp}' : when a subscription is received
-%% - `{rbeacon, Beacon, closed}' : when the beacon is closed
-%% - `{'EXIT', rbeacon, Beacon, Reason}' : when the beacon exit unexpectedly
 %%
 %% Note: the filter allows you to filter a subscription by its prefix.
 -spec subscribe(beacon(), binary() | string()) -> ok.
@@ -191,13 +190,11 @@ handle_info(_Msg, State) ->
 
 %% close
 %% @private
-terminate(normal, #state{owner=Owner}) ->
-    Owner ! {rbeacon, self(), closed},
+terminate(normal, _State) ->
     ok;
 %% exit
-terminate(Reason, #state{owner=Owner}=State) ->
-    Owner ! {'EXIT', rbeacon, self(), Reason},
-    error_logger:info_msg("got terminate(~p, ~p)~n", [Reason, State]),
+terminate(_Reason, _State) ->
+    error_logger:info_msg("got terminate(~p, ~p)~n", [_Reason, _State]),
     ok.
 
 %% @private
@@ -274,3 +271,64 @@ get_env(Key, Default) ->
         {ok, Value} -> Value;
         _           -> Default
     end.
+
+
+to_binary(V) when is_list(V) ->
+    list_to_binary(V);
+to_binary(V) when is_atom(V) ->
+    atom_to_binary(V, latin1);
+to_binary(V) when is_integer(V) ->
+    list_to_binary(integer_to_list(V));
+to_binary(V) when is_binary(V) ->
+    V.
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+
+loop_sub(_Beacon, Acc, 0) ->
+    Acc;
+loop_sub(Beacon, Acc, N) ->
+    receive
+        {rbeacon, Beacon, Msg, _} ->
+            loop_sub(Beacon, [Msg | Acc], N-1)
+    end.
+
+
+rbeacon_test() ->
+    {ok, Service} = rbeacon:new(9999),
+    ?assert(is_pid(Service)),
+
+    ok = rbeacon:set_interval(Service, 100),
+    ok = rbeacon:publish(Service, <<"announcement">>),
+
+    {ok, Client} = rbeacon:new(9999),
+    ok = rbeacon:subscribe(Client, <<>>),
+    receive
+        {rbeacon, Client, <<"announcement">>, _Addr} ->
+            ok
+    end,
+
+    ok = rbeacon:close(Service),
+    ok = rbeacon:close(Client),
+
+    {ok, Node1} = rbeacon:new(5670),
+    {ok, Node2} = rbeacon:new(5670),
+    {ok, Node3} = rbeacon:new(5670),
+
+    rbeacon:publish(Node1, <<"Node/1">>),
+    rbeacon:publish(Node2, <<"Node/2">>),
+    rbeacon:publish(Node3, <<"GARBAGE">>),
+    rbeacon:subscribe(Node1, <<"Node">>),
+
+    Result = loop_sub(Node1, [], 1),
+
+    ?assert(lists:member(<<"Node/2">>, Result)),
+
+    rbeacon:close(Node1),
+    rbeacon:close(Node2),
+    rbeacon:close(Node3),
+
+    ok.
+
+-endif.

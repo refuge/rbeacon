@@ -1,6 +1,6 @@
 ERL          ?= erl
 ERLC		     ?= erlc
-APP          := rbeacon 
+APP          := rbeacon
 REBAR?= rebar
 
 .PHONY: deps doc
@@ -30,6 +30,9 @@ distclean: clean
 
 dialyzer: compile
 	@dialyzer -Wno_return -c ebin
+
+test: all
+	@$(REBAR) eunit
 
 
 # development
