@@ -41,9 +41,9 @@ receive
 end,
 
 ok = rbeacon:close(Service),
-    receive
-        {rbeacon, Service, closed} -> ok
-    end,
+receive
+    {rbeacon, Service, closed} -> ok
+end,
 
 ok = rbeacon:close(Client),
 receive
