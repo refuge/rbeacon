@@ -41,7 +41,14 @@ receive
 end,
 
 ok = rbeacon:close(Service),
+    receive
+        {rbeacon, Service, closed} -> ok
+    end,
+
 ok = rbeacon:close(Client),
+receive
+    {rbeacon, Client, closed} -> ok
+end,
 
 {ok, Node1} = rbeacon:new(5670),
 {ok, Node2} = rbeacon:new(5670),
