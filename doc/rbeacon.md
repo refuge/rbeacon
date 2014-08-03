@@ -43,7 +43,8 @@ beacon() = pid()
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#close-1">close/1</a></td><td>close a beacon
 Close a beacon.</td></tr><tr><td valign="top"><a href="#control-2">control/2</a></td><td>Assigns a new controlling process Pid to beacon
 The controlling process is the process which receives messages from the
-beacon.</td></tr><tr><td valign="top"><a href="#new-1">new/1</a></td><td>Create a new beacon on a certain UDP port.</td></tr><tr><td valign="top"><a href="#publish-2">publish/2</a></td><td>Start broadcasting beacon to peers at the specified interval.</td></tr><tr><td valign="top"><a href="#set_interval-2">set_interval/2</a></td><td>Set broadcast interval in milliseconds (default is 1000 msec).</td></tr><tr><td valign="top"><a href="#silence-1">silence/1</a></td><td>Stop broadcasting beacons.</td></tr><tr><td valign="top"><a href="#subscribe-2">subscribe/2</a></td><td>Start listening to other peers; zero-sized filter means get everything.</td></tr><tr><td valign="top"><a href="#unsubscribe-1">unsubscribe/1</a></td><td>Stop listening to other peers.</td></tr></table>
+beacon.</td></tr><tr><td valign="top"><a href="#new-1">new/1</a></td><td>Create a new beacon on a certain UDP port.</td></tr><tr><td valign="top"><a href="#publish-2">publish/2</a></td><td>Start broadcasting beacon to peers at the specified interval.</td></tr><tr><td valign="top"><a href="#set_interval-2">set_interval/2</a></td><td>Set broadcast interval in milliseconds (default is 1000 msec).</td></tr><tr><td valign="top"><a href="#silence-1">silence/1</a></td><td>Stop broadcasting beacons.</td></tr><tr><td valign="top"><a href="#subscribe-2">subscribe/2</a></td><td>Start listening to other peers; zero-sized filter means get everything
+All messages received by the peer will be then sent to the process owner.</td></tr><tr><td valign="top"><a href="#unsubscribe-1">unsubscribe/1</a></td><td>Stop listening to other peers.</td></tr></table>
 
 
 <a name="functions"></a>
@@ -144,7 +145,19 @@ subscribe(Ref::<a href="#type-beacon">beacon()</a>, Filter::binary() | string())
 <br></br>
 
 
+
 Start listening to other peers; zero-sized filter means get everything
+All messages received by the peer will be then sent to the process owner.
+Incoming messages are:
+
+
+
+- `{rbeacon, Beacon, Message, SenderIp}` : when a subscription is received
+- `{rbeacon, Beacon, closed}` : when the beacon is closed
+- `{`EXIT', rbeacon, Beacon, Reason}' : when the beacon exit unexpectedly
+
+
+Note: the filter allows you to filter a subscription by its prefix.
 <a name="unsubscribe-1"></a>
 
 ### unsubscribe/1 ###

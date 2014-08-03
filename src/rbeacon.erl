@@ -11,6 +11,7 @@
 %% asynchronously in the background.
 %%
 -module(rbeacon).
+-author('Benoît Chesneau <benoitc@e-engura.org>').
 -behaviour(gen_server).
 
 %% public api
@@ -80,6 +81,14 @@ publish(Ref, Msg) ->
     gen_server:call(Ref, {publish, Msg}, infinity).
 
 %% @doc Start listening to other peers; zero-sized filter means get everything
+%% All messages received by the peer will be then sent to the process owner.
+%% Incoming messages are:
+%%
+%% - `{rbeacon, Beacon, Message, SenderIp}' : when a subscription is received
+%% - `{rbeacon, Beacon, closed}' : when the beacon is closed
+%% - `{'EXIT', rbeacon, Beacon, Reason}' : when the beacon exit unexpectedly
+%%
+%% Note: the filter allows you to filter a subscription by its prefix.
 -spec subscribe(beacon(), binary() | string()) -> ok.
 subscribe(Ref, Filter) when is_list(Filter) ->
     subscribe(Ref, list_to_binary(Filter));
