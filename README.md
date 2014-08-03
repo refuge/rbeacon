@@ -4,7 +4,7 @@
 
 Copyright (c) 2014 Benoît Chesneau.
 
-__Version:__ 0.1
+__Version:__ 0.1.1
 
 ## Description
 
@@ -41,14 +41,7 @@ receive
 end,
 
 ok = rbeacon:close(Service),
-receive
-    {rbeacon, Service, closed} -> ok
-end,
-
 ok = rbeacon:close(Client),
-receive
-    {rbeacon, Client, closed} -> ok
-end,
 
 {ok, Node1} = rbeacon:new(5670),
 {ok, Node2} = rbeacon:new(5670),
