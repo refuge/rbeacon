@@ -1,7 +1,7 @@
 %%% -*- erlang -*-
 %%%
-%%% This file is part of rbeacon released under the MIT license.
-%%% See the NOTICE for more information.
+%%% This file is part of rbeacon released under the Mozilla Public License
+%%% Version 2.0. See the NOTICE for more information.
 
 %% @doc The rbeacon module implements a peer-to-peer discovery service for local
 %% networks. A beacon can broadcast and/or capture service announcements using

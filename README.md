@@ -4,7 +4,7 @@
 
 Copyright (c) 2014 Benoît Chesneau.
 
-__Version:__ 0.1.1
+__Version:__ 0.1.2
 
 ## Description
 
@@ -69,6 +69,27 @@ rbeacon:close(Node3),
 ok.
 ```
 
+## Ownership and License
+The contributors are listed in AUTHORS. This project uses the MPL v2 license,
+see LICENSE.
+
+rbeacon uses the
+[C4.1 (Collective Code Construction Contract)](http://rfc.zeromq.org/spec:22)
+process for contributions.
+
+## Development
+
+Under C4.1 process, you are more than welcome to help us by:
+
+* join the discussion over anything from design to code style
+* try out and [submit issue reports](http://rfc.zeromq.org/spec:22) or feature requests
+* pick a task in [issues](https://github.com/refuge/rbeacon/issues) and get it done
+* fork the repository and have your own fixes
+* send us pull requests
+* and even star this project ^_^
+
+To  run the test suite:
+$ rebar eunit
 
 
 ## Modules ##
