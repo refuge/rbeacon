@@ -35,6 +35,18 @@ beacon() = pid()
 </code></pre>
 
 
+
+
+
+### <a name="type-beacon_opts">beacon_opts()</a> ###
+
+
+
+<pre><code>
+beacon_opts() = [active | {active, true | false | once | integer()} | {interval, integer()} | noecho | {noecho, true | false}]
+</code></pre>
+
+
 <a name="index"></a>
 
 ## Function Index ##
@@ -43,7 +55,7 @@ beacon() = pid()
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#close-1">close/1</a></td><td>close a beacon
 Close a beacon.</td></tr><tr><td valign="top"><a href="#control-2">control/2</a></td><td>Assigns a new controlling process Pid to beacon
 The controlling process is the process which receives messages from the
-beacon.</td></tr><tr><td valign="top"><a href="#new-1">new/1</a></td><td>Create a new beacon on a certain UDP port.</td></tr><tr><td valign="top"><a href="#publish-2">publish/2</a></td><td>Start broadcasting beacon to peers at the specified interval.</td></tr><tr><td valign="top"><a href="#set_interval-2">set_interval/2</a></td><td>Set broadcast interval in milliseconds (default is 1000 msec).</td></tr><tr><td valign="top"><a href="#silence-1">silence/1</a></td><td>Stop broadcasting beacons.</td></tr><tr><td valign="top"><a href="#subscribe-2">subscribe/2</a></td><td>Start listening to other peers; zero-sized filter means get everything
+beacon.</td></tr><tr><td valign="top"><a href="#new-1">new/1</a></td><td>Create a new beacon on a certain UDP port.</td></tr><tr><td valign="top"><a href="#new-2">new/2</a></td><td></td></tr><tr><td valign="top"><a href="#noecho-1">noecho/1</a></td><td> Filter out any beacon that looks exactly like ours.</td></tr><tr><td valign="top"><a href="#publish-2">publish/2</a></td><td>Start broadcasting beacon to peers at the specified interval.</td></tr><tr><td valign="top"><a href="#recv-1">recv/1</a></td><td>wait to receive a beacon.</td></tr><tr><td valign="top"><a href="#recv-2">recv/2</a></td><td>wait to receive a beacon with timeout.</td></tr><tr><td valign="top"><a href="#set_interval-2">set_interval/2</a></td><td>Set broadcast interval in milliseconds (default is 1000 msec).</td></tr><tr><td valign="top"><a href="#setopts-2">setopts/2</a></td><td></td></tr><tr><td valign="top"><a href="#silence-1">silence/1</a></td><td>Stop broadcasting beacons.</td></tr><tr><td valign="top"><a href="#subscribe-2">subscribe/2</a></td><td>Start listening to other peers; zero-sized filter means get everything
 All messages received by the peer will be then sent to the process owner.</td></tr><tr><td valign="top"><a href="#unsubscribe-1">unsubscribe/1</a></td><td>Stop listening to other peers.</td></tr></table>
 
 
@@ -94,6 +106,32 @@ new(Port::integer()) -&gt; {ok, <a href="#type-beacon">beacon()</a>} | {error, t
 
 
 Create a new beacon on a certain UDP port.
+<a name="new-2"></a>
+
+### new/2 ###
+
+
+<pre><code>
+new(Port::integer(), Options::<a href="#type-beacon_opts">beacon_opts()</a>) -&gt; {ok, <a href="#type-beacon">beacon()</a>} | {error, term()}
+</code></pre>
+
+<br></br>
+
+
+
+<a name="noecho-1"></a>
+
+### noecho/1 ###
+
+
+<pre><code>
+noecho(Ref::<a href="#type-beacon">beacon()</a>) -&gt; ok
+</code></pre>
+
+<br></br>
+
+
+ Filter out any beacon that looks exactly like ours
 <a name="publish-2"></a>
 
 ### publish/2 ###
@@ -107,6 +145,33 @@ publish(Ref::<a href="#type-beacon">beacon()</a>, Msg::binary()) -&gt; ok | {err
 
 
 Start broadcasting beacon to peers at the specified interval
+<a name="recv-1"></a>
+
+### recv/1 ###
+
+
+<pre><code>
+recv(Ref::<a href="#type-beacon">beacon()</a>) -&gt; {ok, Addr::string(), Msg::binary()} | {error, term()}
+</code></pre>
+
+<br></br>
+
+
+wait to receive a beacon
+<a name="recv-2"></a>
+
+### recv/2 ###
+
+
+<pre><code>
+recv(Ref::<a href="#type-beacon">beacon()</a>, Timeout::integer() | infinity) -&gt; {ok, Addr::string(), Msg::binary()} | {error, term()}
+</code></pre>
+
+<br></br>
+
+
+wait to receive a beacon with timeout. Timeout can be an integer in
+milliseconds or infinity.
 <a name="set_interval-2"></a>
 
 ### set_interval/2 ###
@@ -120,6 +185,19 @@ set_interval(Ref::<a href="#type-beacon">beacon()</a>, Interval::integer()) -&gt
 
 
 Set broadcast interval in milliseconds (default is 1000 msec)
+<a name="setopts-2"></a>
+
+### setopts/2 ###
+
+
+<pre><code>
+setopts(Ref::<a href="#type-beacon">beacon()</a>, Options::<a href="#type-beacon_opts">beacon_opts()</a>) -&gt; ok
+</code></pre>
+
+<br></br>
+
+
+
 <a name="silence-1"></a>
 
 ### silence/1 ###

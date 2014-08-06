@@ -15,14 +15,17 @@
 -behaviour(gen_server).
 
 %% public api
--export([new/1,
+-export([new/1, new/2,
          close/1,
          control/2,
          publish/2,
          subscribe/2,
          unsubscribe/1,
+         recv/1, recv/2,
          silence/1,
-         set_interval/2]).
+         noecho/1,
+         set_interval/2,
+         setopts/2]).
 
 %% gen server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -30,12 +33,15 @@
 
 -record(state, {sock,
                 port,
+                active=false,
                 addr,
                 owner,
                 filter,
                 interval,
                 transmit,
-                tref=nil}).
+                noecho=false,
+                tref=nil,
+                pending_recv=nil}).
 
 %% default interval
 -define(DEFAULT_INTERVAL, 1000).
@@ -47,11 +53,24 @@
 -type beacon() :: pid().
 -export_type([beacon/0]).
 
+-type beacon_opts() :: [active |
+                        {active, true | false | once | integer()} |
+                        {interval, integer()} |
+                        noecho |
+                        {noecho, true | false}].
+-export_type([beacon_opts/0]).
+
 
 %% @doc Create a new beacon on a certain UDP port.
 - spec new(Port::integer()) -> {ok, beacon()} | {error, term()}.
 new(Port) ->
-    gen_server:start_link(?MODULE, [Port, self()], []).
+    new(Port, []).
+
+-spec new(Port::integer(), Options::beacon_opts())
+    -> {ok, beacon()} | {error, term()}.
+new(Port, Options) ->
+    ok = validate_options(Options),
+    gen_server:start_link(?MODULE, [Port, self(), Options], []).
 
 
 %% @doc close a beacon
@@ -74,7 +93,7 @@ close(Ref) ->
 %% `{error, not_owner}' is returned.
 -spec control(beacon(), pid()) -> ok | {error, not_owner}.
 control(Ref, Pid) ->
-    gen_server:call(Ref, {control, Pid, self()}).
+    gen_server:call(Ref, {control, Pid, self()}, infinity).
 
 %% @doc Start broadcasting beacon to peers at the specified interval
 -spec publish(beacon(), binary()) -> ok | {error, term()}.
@@ -99,17 +118,36 @@ subscribe(Ref, Filter0) when is_binary(Filter0) ->
         <<"">> -> all;
         _ -> Filter0
     end,
-    gen_server:call(Ref, {subscribe, Filter}).
+    gen_server:call(Ref, {subscribe, Filter}, infinity).
 
 %% @doc Stop listening to other peers
 -spec unsubscribe(beacon()) -> ok.
 unsubscribe(Ref) ->
-    gen_server:call(Ref, unsubscribe).
+    gen_server:call(Ref, unsubscribe, infinity).
+
+%% @doc wait to receive a beacon
+-spec recv(beacon()) -> {ok, Addr::string(), Msg::binary()} | {error, term()}.
+recv(Ref) ->
+    recv(Ref, infinity).
+
+%% @doc wait to receive a beacon with timeout. Timeout can be an integer in
+%% milliseconds or infinity.
+-spec recv(beacon(), integer() | infinity) ->
+    {ok, Addr::string(), Msg::binary()}
+    | {error, term()}.
+recv(Ref, Timeout) when is_integer(Timeout) orelse Timeout =:= infinity ->
+    gen_server:call(Ref, {recv, Timeout}, infinity).
 
 %% @doc Stop broadcasting beacons
 -spec silence(beacon()) -> ok.
 silence(Ref) ->
-    gen_server:call(Ref, silence).
+    gen_server:call(Ref, silence, infinity).
+
+%% @doc  Filter out any beacon that looks exactly like ours
+-spec noecho(beacon()) -> ok.
+noecho(Ref) ->
+    gen_server:call(Ref, noecho, infinity).
+
 
 %% @doc Set broadcast interval in milliseconds (default is 1000 msec)
 -spec set_interval(beacon(), integer()) -> ok | {error, term()}.
@@ -118,14 +156,38 @@ set_interval(Ref, Interval) when is_integer(Interval) ->
 set_interval(_, _) ->
     {error, badarg}.
 
+%% @ doc set beacon options. Valid options are:
+%% <ul>
+%% <li>`active', `{active, true | false | once| N}': like `inet:setopts/1'</li>
+%% <li>`{interval, N}': Set
+%% broadcast interval in milliseconds</li>
+%% <li>`noecho | {noecho, true | false}': Filter out any beacon that
+%% looks exactly like ours.</li>
+%% </ul>
+-spec setopts(beacon(), beacon_opts()) -> ok.
+setopts(Ref, Options) ->
+    ok = validate_options(Options),
+    gen_server:call(Ref, {setopts, Options}, infinity).
+
+
 
 %% gen server functions
 %% @private
-init([Port, Owner]) ->
-    {ok, Sock} = open_udp_port(Port),
+init([Port, Owner, Options]) ->
+    Active = proplists:get_value(active, Options, false),
+    Interval = proplists:get_value(interval, Options, ?DEFAULT_INTERVAL),
+    NoEcho = proplists:get_value(noecho, Options, false),
+
+    %% init the socket
+    {ok, Sock} = open_udp_port(Port, Active),
+    %% trap exit
+    process_flag(trap_exit, true),
+
     {ok, #state{sock=Sock,
                 port=Port,
-                interval=?DEFAULT_INTERVAL,
+                active=Active,
+                interval=Interval,
+                noecho=NoEcho,
                 owner=Owner}}.
 %% @private
 handle_call(close, _From, State) ->
@@ -146,21 +208,37 @@ handle_call({publish, Msg}, _From, State) ->
                                      {transmit, Msg}),
     {reply, ok, State#state{transmit=Msg, tref=TRef}};
 
+handle_call({set_interval, Interval}, _From, #state{transmit=undefined}=State) ->
+    {reply, ok, State#state{interval=Interval}};
 handle_call({set_interval, Interval}, _From, #state{transmit=Msg}=State) ->
     ok = cancel_timer(State),
     {ok, TRef} = timer:send_interval(Interval, self(), {transmit, Msg}),
     {reply, ok, State#state{interval=Interval, tref=TRef}};
-
-
 handle_call(silence,  _From, State) ->
     ok = cancel_timer(State),
     {reply, ok, State#state{tref=nil}};
+handle_call(noecho,  _From, State) ->
+    {reply, ok, State#state{noecho=true}};
+
+handle_call({setopts, Opts}, _From, State) ->
+    {ok, NState} = do_setopts(Opts, State),
+    {reply, ok, NState};
 
 handle_call({subscribe, Filter}, _From, State) ->
     {reply, ok, State#state{filter=Filter}};
 
 handle_call(unsubscribe, _From, State) ->
-    {reply, ok, State#state{filter=nil}}.
+    {reply, ok, State#state{filter=nil}};
+
+handle_call({recv, _}, _From, #state{active=Active}=State)
+        when Active /= false ->
+    {reply, {error, active}, State};
+
+handle_call({recv, Timeout}, From, #state{pending_recv=nil}=State) ->
+    {noreply, handle_recv(From, State, Timeout)};
+
+handle_call({recv, _Timeout}, _From, State) ->
+    {reply, {error, already_recv}, State}.
 
 %% @private
 handle_cast(_Msg, State) ->
@@ -172,31 +250,58 @@ handle_info({transmit, Msg}, State) ->
     ok = transmit_msg(Msg, State),
     {noreply, State};
 
-handle_info({udp, Sock, _IP, _, Msg}, #state{sock=Sock, transmit=Msg}=State) ->
+handle_info({udp, Sock, _IP, _, Msg}, #state{sock=Sock,
+                                             transmit=Msg,
+                                             noecho=true}=State) ->
     %% echo, ignore it
     {noreply, State};
 handle_info({udp, _Sock, _IP, _, _Msg}, #state{filter=nil}=State) ->
     %% no subscribtion
     {noreply, State};
-handle_info({udp, _Sock, IP, _, Msg}, #state{owner=Owner,
+handle_info({udp, _Sock, IP, _, Msg}, #state{active=Active,
+                                             owner=Owner,
                                              filter=Filter}=State) ->
+
+    %% decrement Active if needed
+    Active1 = if is_integer(Active) -> Active - 1;
+        true -> Active
+    end,
+
     case filter_match(Msg, Filter) of
         true ->
             Owner ! {rbeacon, self(), Msg, IP};
         false ->
             ok
     end,
-    {noreply, State};
 
+    %% if active is once or null, then set it to false
+    NState = case Active1 of
+        once ->
+            State#state{active=false};
+        0 ->
+            State#state{active=false};
+
+        _ ->
+            State
+    end,
+    {noreply, NState};
+
+handle_info({'EXIT', Pid, _Reason}, #state{pending_recv=Pid}=State) ->
+    {noreply,  State#state{pending_recv=nil}};
 handle_info(_Msg, State) ->
     {noreply, State}.
 
 %% close
 %% @private
+terminate(normal, #state{active=false}) ->
+    ok;
 terminate(normal, #state{owner=Owner}) ->
     Owner ! {rbeacon, self(), closed},
     ok;
 %% exit
+terminate(Reason, #state{active=false}=State) ->
+    error_logger:info_msg("got terminate(~p, ~p)~n", [Reason, State]),
+    ok;
 terminate(Reason, #state{owner=Owner}=State) ->
     Owner ! {'EXIT', rbeacon, self(), Reason},
     error_logger:info_msg("got terminate(~p, ~p)~n", [Reason, State]),
@@ -213,6 +318,7 @@ cancel_timer(#state{tref=Tref}) ->
         true -> ok
     end,
     ok.
+
 
 transmit_msg(Msg, #state{sock=Sock, port=Port}) ->
     case addresses() of
@@ -234,9 +340,32 @@ filter_match(Msg, Filter) when byte_size(Msg) >= byte_size(Filter) ->
 filter_match(_, _) ->
     false.
 
-open_udp_port(Port) ->
+
+handle_recv(From, State, Timeout) ->
+    Pid = spawn_link(fun() -> do_recv(From, State, Timeout) end),
+    State#state{pending_recv=Pid}.
+
+
+do_recv(From, #state{sock=Sock, filter=Filter, transmit=Msg,
+                     noecho=NoEcho}=State, Timeout) ->
+    case gen_udp:recv(Sock, 0, Timeout) of
+        {ok, {Addr, _Port, Packet}} ->
+            case filter_match(Packet, Filter) of
+                true when Packet =:= Msg, NoEcho =:= true ->
+                    do_recv(From, State, Timeout);
+                true ->
+                    gen_server:reply(From, {ok, Packet, Addr});
+                false ->
+                    do_recv(From, State, Timeout)
+            end;
+        Error ->
+            gen_server:reply(From, Error)
+    end.
+
+
+open_udp_port(Port, Active) ->
     %% defaullt options
-    Options0 = [{active, true},
+    Options0 = [{active, Active},
                 {broadcast, true},
                 {reuseaddr, true},
                 inet,
@@ -287,6 +416,55 @@ to_binary(V) when is_integer(V) ->
 to_binary(V) when is_binary(V) ->
     V.
 
+
+validate_options([]) ->
+    ok;
+validate_options([{active, N} | Rest]) when is_integer(N) ->
+    validate_options(Rest);
+validate_options([{active, once} | Rest]) ->
+    validate_options(Rest);
+validate_options([{active, true} | Rest]) ->
+    validate_options(Rest);
+validate_options([{active, false} | Rest]) ->
+    validate_options(Rest);
+validate_options([active | Rest]) ->
+    validate_options(Rest);
+validate_options([{interval, N} | Rest]) when is_integer(N) ->
+    validate_options(Rest);
+validate_options([{noecho, _NoEcho} | Rest]) ->
+    validate_options(Rest);
+validate_options([noecho | Rest]) ->
+    validate_options(Rest);
+validate_options(_) ->
+    badarg.
+
+
+do_setopts([], State) ->
+    {ok, State};
+do_setopts([{active, Active} | Rest], #state{sock=S}=State) ->
+    ok = inet:setopts(S, [{active, Active}]),
+    do_setopts(Rest, State#state{active=Active});
+do_setopts([active | Rest], #state{sock=S}=State) ->
+    ok = inet:setopts(S, [{active, true}]),
+    do_setopts(Rest, State#state{active=true});
+do_setopts([{interval, N} | Rest], #state{transmit=Msg}=State) ->
+    State2 = case Msg of
+        undefined -> State#state{interval=N};
+        _ ->
+            ok = cancel_timer(State),
+            {ok, TRef} = timer:send_interval(N, self(), {transmit, Msg}),
+            State#state{interval=N, tref=TRef}
+    end,
+    do_setopts(Rest, State2);
+do_setopts([{noecho, NoEcho} | Rest], State) ->
+    do_setopts(Rest, State#state{noecho=NoEcho});
+do_setopts([noecho | Rest], State) ->
+    do_setopts(Rest, State#state{noecho=true});
+do_setopts(_, _State) ->
+    badarg.
+
+
+
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
@@ -309,6 +487,43 @@ rbeacon_test() ->
 
     {ok, Client} = rbeacon:new(9999),
     ok = rbeacon:subscribe(Client, <<>>),
+
+    {ok, Msg, _Addr} = rbeacon:recv(Client),
+    ?assertEqual(Msg, <<"announcement">>),
+
+
+    ok = rbeacon:close(Service),
+    ok = rbeacon:close(Client),
+
+    {ok, Node1} = rbeacon:new(5670),
+    {ok, Node2} = rbeacon:new(5670),
+    {ok, Node3} = rbeacon:new(5670),
+
+    ok = rbeacon:noecho(Node1),
+
+    rbeacon:publish(Node1, <<"Node/1">>),
+    rbeacon:publish(Node2, <<"Node/2">>),
+    rbeacon:publish(Node3, <<"GARBAGE">>),
+    rbeacon:subscribe(Node1, <<"Node">>),
+
+    {ok, Msg2, _Addr} = rbeacon:recv(Node1),
+    ?assertEqual(Msg2, <<"Node/2">>),
+
+    rbeacon:close(Node1),
+    rbeacon:close(Node2),
+    rbeacon:close(Node3),
+
+    ok.
+
+rbeacon_active_test() ->
+    {ok, Service} = rbeacon:new(9999, [active, noecho]),
+    ?assert(is_pid(Service)),
+
+    ok = rbeacon:set_interval(Service, 100),
+    ok = rbeacon:publish(Service, <<"announcement">>),
+
+    {ok, Client} = rbeacon:new(9999, [active]),
+    ok = rbeacon:subscribe(Client, <<>>),
     receive
         {rbeacon, Client, <<"announcement">>, _Addr} ->
             ok
@@ -324,9 +539,9 @@ rbeacon_test() ->
         {rbeacon, Client, closed} -> ok
     end,
 
-    {ok, Node1} = rbeacon:new(5670),
-    {ok, Node2} = rbeacon:new(5670),
-    {ok, Node3} = rbeacon:new(5670),
+    {ok, Node1} = rbeacon:new(5670, [active, noecho]),
+    {ok, Node2} = rbeacon:new(5670, [active, noecho]),
+    {ok, Node3} = rbeacon:new(5670, [active, noecho]),
 
     rbeacon:publish(Node1, <<"Node/1">>),
     rbeacon:publish(Node2, <<"Node/2">>),

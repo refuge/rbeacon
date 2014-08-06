@@ -4,7 +4,7 @@
 
 Copyright (c) 2014 Benoît Chesneau.
 
-__Version:__ 0.1.2
+__Version:__ 0.2.0
 
 ## Description
 
@@ -35,6 +35,42 @@ ok = rbeacon:publish(Service, <<"announcement">>),
 
 {ok, Client} = rbeacon:new(9999),
 ok = rbeacon:subscribe(Client, <<>>),
+
+{ok, Msg, _Addr} = rbeacon:recv(Client),
+?assertEqual(Msg, <<"announcement">>),
+ok = rbeacon:close(Service),
+ok = rbeacon:close(Client),
+
+{ok, Node1} = rbeacon:new(5670),
+{ok, Node2} = rbeacon:new(5670),
+{ok, Node3} = rbeacon:new(5670),
+
+ok = rbeacon:noecho(Node1),
+
+rbeacon:publish(Node1, <<"Node/1">>),
+rbeacon:publish(Node2, <<"Node/2">>),
+rbeacon:publish(Node3, <<"GARBAGE">>),
+rbeacon:subscribe(Node1, <<"Node">>),
+
+{ok, Msg2, _Addr} = rbeacon:recv(Node1),
+?assertEqual(Msg2, <<"Node/2">>),
+
+rbeacon:close(Node1),
+rbeacon:close(Node2),
+rbeacon:close(Node3).
+```
+
+You can also receive from the beacon as message (from the rbeacon_active_test):
+
+```
+{ok, Service} = rbeacon:new(9999, [active, noecho]),
+?assert(is_pid(Service)),
+
+ok = rbeacon:set_interval(Service, 100),
+ok = rbeacon:publish(Service, <<"announcement">>),
+
+{ok, Client} = rbeacon:new(9999, [active]),
+ok = rbeacon:subscribe(Client, <<>>),
 receive
     {rbeacon, Client, <<"announcement">>, _Addr} ->
         ok
@@ -50,9 +86,9 @@ receive
     {rbeacon, Client, closed} -> ok
 end,
 
-{ok, Node1} = rbeacon:new(5670),
-{ok, Node2} = rbeacon:new(5670),
-{ok, Node3} = rbeacon:new(5670),
+{ok, Node1} = rbeacon:new(5670, [active, noecho]),
+{ok, Node2} = rbeacon:new(5670, [active, noecho]),
+{ok, Node3} = rbeacon:new(5670, [active, noecho]),
 
 rbeacon:publish(Node1, <<"Node/1">>),
 rbeacon:publish(Node2, <<"Node/2">>),
@@ -66,6 +102,7 @@ Result = loop_sub(Node1, [], 1),
 rbeacon:close(Node1),
 rbeacon:close(Node2),
 rbeacon:close(Node3),
+
 ok.
 ```
 
