@@ -6,7 +6,7 @@
 
 
 @copyright 2014 Benoît Chesneau.
-@version 0.1.2
+@version 0.2.0
 @title rbeacon -  LAN discovery and presence.
 
 @doc
