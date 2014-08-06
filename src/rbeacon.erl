@@ -66,6 +66,7 @@
 new(Port) ->
     new(Port, []).
 
+%% @doc Create a new beacon on a certain UDP port with options.
 -spec new(Port::integer(), Options::beacon_opts())
     -> {ok, beacon()} | {error, term()}.
 new(Port, Options) ->
@@ -156,7 +157,7 @@ set_interval(Ref, Interval) when is_integer(Interval) ->
 set_interval(_, _) ->
     {error, badarg}.
 
-%% @ doc set beacon options. Valid options are:
+%% @doc set beacon options. Valid options are:
 %% <ul>
 %% <li>`active', `{active, true | false | once| N}': like `inet:setopts/1'</li>
 %% <li>`{interval, N}': Set

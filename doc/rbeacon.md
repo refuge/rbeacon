@@ -55,7 +55,7 @@ beacon_opts() = [active | {active, true | false | once | integer()} | {interval,
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#close-1">close/1</a></td><td>close a beacon
 Close a beacon.</td></tr><tr><td valign="top"><a href="#control-2">control/2</a></td><td>Assigns a new controlling process Pid to beacon
 The controlling process is the process which receives messages from the
-beacon.</td></tr><tr><td valign="top"><a href="#new-1">new/1</a></td><td>Create a new beacon on a certain UDP port.</td></tr><tr><td valign="top"><a href="#new-2">new/2</a></td><td></td></tr><tr><td valign="top"><a href="#noecho-1">noecho/1</a></td><td> Filter out any beacon that looks exactly like ours.</td></tr><tr><td valign="top"><a href="#publish-2">publish/2</a></td><td>Start broadcasting beacon to peers at the specified interval.</td></tr><tr><td valign="top"><a href="#recv-1">recv/1</a></td><td>wait to receive a beacon.</td></tr><tr><td valign="top"><a href="#recv-2">recv/2</a></td><td>wait to receive a beacon with timeout.</td></tr><tr><td valign="top"><a href="#set_interval-2">set_interval/2</a></td><td>Set broadcast interval in milliseconds (default is 1000 msec).</td></tr><tr><td valign="top"><a href="#setopts-2">setopts/2</a></td><td></td></tr><tr><td valign="top"><a href="#silence-1">silence/1</a></td><td>Stop broadcasting beacons.</td></tr><tr><td valign="top"><a href="#subscribe-2">subscribe/2</a></td><td>Start listening to other peers; zero-sized filter means get everything
+beacon.</td></tr><tr><td valign="top"><a href="#new-1">new/1</a></td><td>Create a new beacon on a certain UDP port.</td></tr><tr><td valign="top"><a href="#new-2">new/2</a></td><td>Create a new beacon on a certain UDP port with options.</td></tr><tr><td valign="top"><a href="#noecho-1">noecho/1</a></td><td> Filter out any beacon that looks exactly like ours.</td></tr><tr><td valign="top"><a href="#publish-2">publish/2</a></td><td>Start broadcasting beacon to peers at the specified interval.</td></tr><tr><td valign="top"><a href="#recv-1">recv/1</a></td><td>wait to receive a beacon.</td></tr><tr><td valign="top"><a href="#recv-2">recv/2</a></td><td>wait to receive a beacon with timeout.</td></tr><tr><td valign="top"><a href="#set_interval-2">set_interval/2</a></td><td>Set broadcast interval in milliseconds (default is 1000 msec).</td></tr><tr><td valign="top"><a href="#setopts-2">setopts/2</a></td><td>set beacon options.</td></tr><tr><td valign="top"><a href="#silence-1">silence/1</a></td><td>Stop broadcasting beacons.</td></tr><tr><td valign="top"><a href="#subscribe-2">subscribe/2</a></td><td>Start listening to other peers; zero-sized filter means get everything
 All messages received by the peer will be then sent to the process owner.</td></tr><tr><td valign="top"><a href="#unsubscribe-1">unsubscribe/1</a></td><td>Stop listening to other peers.</td></tr></table>
 
 
@@ -118,7 +118,7 @@ new(Port::integer(), Options::<a href="#type-beacon_opts">beacon_opts()</a>) -&g
 <br></br>
 
 
-
+Create a new beacon on a certain UDP port with options.
 <a name="noecho-1"></a>
 
 ### noecho/1 ###
@@ -196,6 +196,16 @@ setopts(Ref::<a href="#type-beacon">beacon()</a>, Options::<a href="#type-beacon
 
 <br></br>
 
+
+set beacon options. Valid options are:
+
+* `active`, `{active, true | false | once| N}`: like `inet:setopts/1`
+
+* `{interval, N}`: Set
+broadcast interval in milliseconds
+
+* `noecho | {noecho, true | false}`: Filter out any beacon that
+looks exactly like ours.
 
 
 <a name="silence-1"></a>
