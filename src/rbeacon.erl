@@ -347,22 +347,33 @@ handle_recv(From, State, Timeout) ->
     State#state{pending_recv=Pid}.
 
 
+do_recv(From, _State, Timeout) when
+        Timeout =< 0, timeout /= infinity ->
+    gen_server:reply(From, {error, timeout});
 do_recv(From, #state{sock=Sock, filter=Filter, transmit=Msg,
                      noecho=NoEcho}=State, Timeout) ->
+
+    Start = os:timestamp(),
     case gen_udp:recv(Sock, 0, Timeout) of
         {ok, {Addr, _Port, Packet}} ->
             case filter_match(Packet, Filter) of
                 true when Packet =:= Msg, NoEcho =:= true ->
-                    do_recv(From, State, Timeout);
+                    do_recv(From, State, new_recv_timeout(Timeout, Start));
                 true ->
                     gen_server:reply(From, {ok, Packet, Addr});
                 false ->
-                    do_recv(From, State, Timeout)
+                    do_recv(From, State, new_recv_timeout(Timeout, Start))
             end;
         Error ->
             gen_server:reply(From, Error)
     end.
 
+
+new_recv_timeout(infinity, _) ->
+    infinity;
+new_recv_timeout(Timeout, From) ->
+    TDiff = timer:now_diff(os:timestamp(), From),
+    Timeout - TDiff.
 
 open_udp_port(Port, Active) ->
     %% defaullt options
