@@ -79,7 +79,7 @@ new(Port, Options) ->
 
 %% @doc close a beacon
 %% Close a beacon.
-- spec close(Ref::beacon()) -> ok.
+-spec close(Ref::beacon()) -> ok.
 close(Ref) ->
     try
         gen_server:call(Ref, close, infinity)
