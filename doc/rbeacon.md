@@ -52,10 +52,10 @@ beacon_opts() = [active | {active, true | false | once | integer()} | {interval,
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#close-1">close/1</a></td><td>close a beacon
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#broadcast_ip-1">broadcast_ip/1</a></td><td>Return our own Broadcast IP address as printable string.</td></tr><tr><td valign="top"><a href="#close-1">close/1</a></td><td>close a beacon
 Close a beacon.</td></tr><tr><td valign="top"><a href="#control-2">control/2</a></td><td>Assigns a new controlling process Pid to beacon
 The controlling process is the process which receives messages from the
-beacon.</td></tr><tr><td valign="top"><a href="#new-1">new/1</a></td><td>Create a new beacon on a certain UDP port.</td></tr><tr><td valign="top"><a href="#new-2">new/2</a></td><td>Create a new beacon on a certain UDP port with options.</td></tr><tr><td valign="top"><a href="#noecho-1">noecho/1</a></td><td> Filter out any beacon that looks exactly like ours.</td></tr><tr><td valign="top"><a href="#publish-2">publish/2</a></td><td>Start broadcasting beacon to peers at the specified interval.</td></tr><tr><td valign="top"><a href="#recv-1">recv/1</a></td><td>wait to receive a beacon.</td></tr><tr><td valign="top"><a href="#recv-2">recv/2</a></td><td>wait to receive a beacon with timeout.</td></tr><tr><td valign="top"><a href="#set_interval-2">set_interval/2</a></td><td>Set broadcast interval in milliseconds (default is 1000 msec).</td></tr><tr><td valign="top"><a href="#setopts-2">setopts/2</a></td><td>set beacon options.</td></tr><tr><td valign="top"><a href="#silence-1">silence/1</a></td><td>Stop broadcasting beacons.</td></tr><tr><td valign="top"><a href="#subscribe-2">subscribe/2</a></td><td>Start listening to other peers; zero-sized filter means get everything
+beacon.</td></tr><tr><td valign="top"><a href="#hostname-1">hostname/1</a></td><td>Return our own IP address as printable string.</td></tr><tr><td valign="top"><a href="#new-1">new/1</a></td><td>Create a new beacon on a certain UDP port.</td></tr><tr><td valign="top"><a href="#new-2">new/2</a></td><td>Create a new beacon on a certain UDP port with options.</td></tr><tr><td valign="top"><a href="#noecho-1">noecho/1</a></td><td> Filter out any beacon that looks exactly like ours.</td></tr><tr><td valign="top"><a href="#publish-2">publish/2</a></td><td>Start broadcasting beacon to peers at the specified interval.</td></tr><tr><td valign="top"><a href="#recv-1">recv/1</a></td><td>wait to receive a beacon.</td></tr><tr><td valign="top"><a href="#recv-2">recv/2</a></td><td>wait to receive a beacon with timeout.</td></tr><tr><td valign="top"><a href="#set_interval-2">set_interval/2</a></td><td>Set broadcast interval in milliseconds (default is 1000 msec).</td></tr><tr><td valign="top"><a href="#setopts-2">setopts/2</a></td><td>set beacon options.</td></tr><tr><td valign="top"><a href="#silence-1">silence/1</a></td><td>Stop broadcasting beacons.</td></tr><tr><td valign="top"><a href="#subscribe-2">subscribe/2</a></td><td>Start listening to other peers; zero-sized filter means get everything
 All messages received by the peer will be then sent to the process owner.</td></tr><tr><td valign="top"><a href="#unsubscribe-1">unsubscribe/1</a></td><td>Stop listening to other peers.</td></tr></table>
 
 
@@ -63,6 +63,19 @@ All messages received by the peer will be then sent to the process owner.</td></
 
 ## Function Details ##
 
+<a name="broadcast_ip-1"></a>
+
+### broadcast_ip/1 ###
+
+
+<pre><code>
+broadcast_ip(Ref::<a href="#type-beacon">beacon()</a>) -&gt; string()
+</code></pre>
+
+<br></br>
+
+
+Return our own Broadcast IP address as printable string
 <a name="close-1"></a>
 
 ### close/1 ###
@@ -93,6 +106,19 @@ Assigns a new controlling process Pid to beacon
 The controlling process is the process which receives messages from the
 beacon. If called by any other process than the current controlling process,
 `{error, not_owner}` is returned.
+<a name="hostname-1"></a>
+
+### hostname/1 ###
+
+
+<pre><code>
+hostname(Ref::<a href="#type-beacon">beacon()</a>) -&gt; string()
+</code></pre>
+
+<br></br>
+
+
+Return our own IP address as printable string
 <a name="new-1"></a>
 
 ### new/1 ###

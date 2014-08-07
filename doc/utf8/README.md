@@ -4,7 +4,7 @@
 
 Copyright (c) 2014 Benoît Chesneau.
 
-__Version:__ 0.2.1
+__Version:__ 0.3.0
 
 ## Description
 
@@ -21,6 +21,10 @@ the background.
 ## Usage
 
 Look at the [`rbeacon`](rbeacon.md) module for the API usage.
+
+> **Note:** You can set the interface on which you broadcast using the
+application environment setting `broadast_if` or the the OS environment variable
+`RBEACON_INTERFACE`.
 
 ## Example
 

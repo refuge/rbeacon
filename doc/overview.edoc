@@ -6,7 +6,7 @@
 
 
 @copyright 2014 Benoît Chesneau.
-@version 0.2.1
+@version 0.3.0
 @title rbeacon -  LAN discovery and presence.
 
 @doc
@@ -26,6 +26,10 @@ the background.
 ## Usage
 
 Look at the {@link rbeacon} module for the API usage.
+
+> **Note:** You can set the interface on which you broadcast using the
+application environment setting `broadast_if' or the the OS environment variable
+`RBEACON_INTERFACE'.
 
 ## Example
 
