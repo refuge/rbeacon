@@ -33,6 +33,7 @@
 
 -record(state, {sock,
                 port,
+                broadcast_addr,
                 active=false,
                 addr,
                 owner,
@@ -181,11 +182,16 @@ init([Port, Owner, Options]) ->
 
     %% init the socket
     {ok, Sock} = open_udp_port(Port, Active),
+
+    %% get broadcast address
+    Addr = broadcast_addr(),
+
     %% trap exit
     process_flag(trap_exit, true),
 
     {ok, #state{sock=Sock,
                 port=Port,
+                broadcast_addr=Addr,
                 active=Active,
                 interval=Interval,
                 noecho=NoEcho,
@@ -321,16 +327,8 @@ cancel_timer(#state{tref=Tref}) ->
     ok.
 
 
-transmit_msg(Msg, #state{sock=Sock, port=Port}) ->
-    case addresses() of
-        [] ->
-            error_logger:info_msg("no addresses to send");
-        Addresses ->
-            [begin
-                    ok = gen_udp:send(Sock, Addr, Port, Msg)
-            end || Addr <- Addresses]
-    end,
-    ok.
+transmit_msg(Msg, #state{sock=Sock, port=Port, broadcast_addr=Addr}) ->
+    gen_udp:send(Sock, Addr, Port, Msg).
 
 filter_match(_, all) -> true;
 filter_match(Msg, Filter) when byte_size(Msg) >= byte_size(Filter) ->
@@ -402,15 +400,50 @@ reuseport() ->
             false
     end.
 
-addresses() -> addresses(get_env(broadcast_ip, undefined)).
 
-addresses(Addr = {_, _, _, _}) ->
-    [Addr];
-addresses(_) ->
-    [A || {ok, Is} <- [inet:getifaddrs()],
-          {_, L} <- Is,
-          {broadaddr, A = {_, _, _, _}} <- L,
-          lists:member(up, proplists:get_value(flags, L, []))].
+broadcast_addr() ->
+    IfName = case os:getenv("RBEACON_INTERFACE") of
+        false -> get_env("broadast_if", "");
+        Name -> Name
+    end,
+
+    case IfName of
+        "*" -> "255.255.255.255";
+        _ -> broadcast_addr(IfName)
+    end.
+
+
+broadcast_addr(Name) ->
+    {ok, Interfaces} = inet:getifaddrs(),
+    broadcast_addr(Interfaces, Name, []).
+
+
+broadcast_addr([], _Name, []) ->
+    "255.255.255.255";
+broadcast_addr([], _Name, [Addr | _]) ->
+    Addr;
+broadcast_addr([Interface | Rest], Name, Acc) ->
+    {IfName, Props} = Interface,
+    Flags = proplists:get_value(flags, Props, []),
+
+    Up = lists:member(up, Flags),
+    Broadcast = lists:member(broadcast, Flags),
+    LoopBack =  lists:member(loopback, Flags),
+    P2P = lists:member(pointtopoint, Flags),
+
+    if Up =:= true, Broadcast =:= true, LoopBack /= true andalso P2P /= true ->
+            case proplists:get_value(broadaddr, Props) of
+                A = {_, _, _, _} when IfName =:= Name ->
+                    A;
+                A = {_, _, _, _} ->
+                    broadcast_addr(Rest, Name, [A | Acc]);
+                _ ->
+                    broadcast_addr(Rest, Name, Acc)
+            end;
+        true ->
+            broadcast_addr(Rest, Name, Acc)
+    end.
+
 
 get_env(Key, Default) ->
     case application:get_env(?MODULE, Key) of
