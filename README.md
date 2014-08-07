@@ -20,7 +20,7 @@ the background.
 
 ## Usage
 
-Look at the [`rbeacon`](http://github.com/refuge/rbeacon/blob/fix/gh4/doc/rbeacon.md) module for the API usage.
+Look at the [`rbeacon`](http://github.com/refuge/rbeacon/blob/master/doc/rbeacon.md) module for the API usage.
 
 > **Note:** You can set the interface on which you broadcast using the
 application environment setting `broadast_if` or the the OS environment variable
@@ -137,5 +137,5 @@ $ rebar eunit
 
 
 <table width="100%" border="0" summary="list of modules">
-<tr><td><a href="http://github.com/refuge/rbeacon/blob/fix/gh4/doc/rbeacon.md" class="module">rbeacon</a></td></tr></table>
+<tr><td><a href="http://github.com/refuge/rbeacon/blob/master/doc/rbeacon.md" class="module">rbeacon</a></td></tr></table>
 
