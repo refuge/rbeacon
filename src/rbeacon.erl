@@ -427,7 +427,13 @@ reuseport() ->
 
 broadcast_addr() ->
     IfName = case os:getenv("RBEACON_INTERFACE") of
-        false -> get_env("broadast_if", "");
+        false ->
+            %% compatibilitt with zbeacon, handle the ZSYS_INTERFACE environment
+            %% variable
+            case  os:getenv("ZSYS_INTERFACE") of
+                false -> get_env("broadast_if", "");
+                Name -> Name
+            end;
         Name -> Name
     end,
 
